@@ -225,8 +225,8 @@ task downloadBootstraps() {
     doLast {
         def packageVariant = project.ext.packageVariant
         if (packageVariant == "apt-android-7") {
-            def version = "2026.08.14-r2" + "%2B" + "apt.android-7"
-            downloadBootstrap("aarch64", "916ca0bf8410db92a80a2f42c33f7ed8ff2cb038b1e977bcfc2a58b2f81acbef", version)
+            def version = "2026.08.14-r3" + "%2B" + "apt.android-7"
+            downloadBootstrap("aarch64", "393138f6692eb06cc524618641b57bf2e0b122e3128ac2f43456695c1f19a766", version)
         } else {
             throw new GradleException("Unsupported TERMUX_PACKAGE_VARIANT \"" + packageVariant + "\"")
         }
