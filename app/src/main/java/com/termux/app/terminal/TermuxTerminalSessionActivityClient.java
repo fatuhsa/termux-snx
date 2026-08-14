@@ -510,7 +510,13 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
             }
             updateBackgroundColor();
 
-            final Typeface newTypeface = (fontFile.exists() && fontFile.length() > 0) ? Typeface.createFromFile(fontFile) : Typeface.MONOSPACE;
+            final Typeface newTypeface;
+            if (fontFile.exists() && fontFile.length() > 0) {
+                newTypeface = Typeface.createFromFile(fontFile);
+            } else {
+                // Default bundled font: JetBrains Mono (OFL-1.1)
+                newTypeface = Typeface.createFromAsset(mActivity.getAssets(), "fonts/JetBrainsMono-Regular.ttf");
+            }
             mActivity.getTerminalView().setTypeface(newTypeface);
         } catch (Exception e) {
             Logger.logStackTraceWithMessage(LOG_TAG, "Error in checkForFontAndColors()", e);
