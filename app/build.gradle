@@ -14,7 +14,6 @@ ext {
 
 android {
     namespace "com.termux"
-    applicationId "io.sanix"
 
     compileSdkVersion project.properties.compileSdkVersion.toInteger()
     ndkVersion = System.getenv("JITPACK_NDK_VERSION") ?: project.properties.ndkVersion
@@ -42,6 +41,7 @@ android {
     }
 
     defaultConfig {
+        applicationId "io.sanix"
         minSdkVersion project.properties.minSdkVersion.toInteger()
         targetSdkVersion project.properties.targetSdkVersion.toInteger()
         versionCode 118
