@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "io.sanix",
+  "variantName": "debug",
+  "elements": [
+    {
+      "type": "UNIVERSAL",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 118,
+      "versionName": "0.118.0+9f81638",
+      "outputFile": "termux-app_v0.118.0+9f81638-apt-android-7-github-debug_universal.apk"
+    },
+    {
+      "type": "ONE_OF_MANY",
+      "filters": [
+        {
+          "filterType": "ABI",
+          "value": "arm64-v8a"
+        }
+      ],
+      "attributes": [],
+      "versionCode": 118,
+      "versionName": "0.118.0+9f81638",
+      "outputFile": "termux-app_v0.118.0+9f81638-apt-android-7-github-debug_arm64-v8a.apk"
+    }
+  ],
+  "elementType": "File",
+  "minSdkVersionForDexing": 21
+}

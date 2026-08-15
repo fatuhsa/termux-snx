@@ -160,6 +160,18 @@ public final class SanixGpuDemoActivity extends Activity {
             android.util.Log.i("SanixGpuDemo", "onSurfaceCreated");
             mRenderer.init();
             mRenderer.setDebugAtlas(true);
+            try {
+                byte[] png = mRenderer.dumpAtlasPng();
+                if (png != null) {
+                    java.io.File f = new java.io.File(getFilesDir(), "atlas_bitmap.png");
+                    java.io.FileOutputStream fos = new java.io.FileOutputStream(f);
+                    fos.write(png);
+                    fos.close();
+                    android.util.Log.i("SanixGpuDemo", "atlas bitmap saved " + f.getAbsolutePath() + " " + png.length + " bytes");
+                }
+            } catch (Exception e) {
+                android.util.Log.e("SanixGpuDemo", "save atlas bitmap failed", e);
+            }
         }
 
         @Override

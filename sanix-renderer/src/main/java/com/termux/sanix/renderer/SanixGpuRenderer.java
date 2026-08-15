@@ -44,6 +44,9 @@ public final class SanixGpuRenderer {
     private int mUOffset;
     private boolean mDebugAtlas;
     private int mAtlasDumpProgram;
+    private Bitmap mAtlasBitmap;
+    private int mAtlasWidth;
+    private int mAtlasHeight;
     private float mViewportWidth;
     private float mViewportHeight;
 
@@ -225,8 +228,42 @@ public final class SanixGpuRenderer {
         GLES30.glVertexAttribPointer(0, 2, GLES30.GL_FLOAT, false, 0, 0);
         GLES30.glEnableVertexAttribArray(0);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mQuadEbo);
+        GLES30.glViewport(0, 0, mAtlasWidth, mAtlasHeight);
         GLES30.glDrawElements(GLES30.GL_TRIANGLES, 6, GLES30.GL_UNSIGNED_SHORT, 0);
+
+        ByteBuffer rb = ByteBuffer.allocateDirect(mAtlasWidth * mAtlasHeight * 4);
+        GLES30.glReadPixels(0, 0, mAtlasWidth, mAtlasHeight, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, rb);
+        int[] pixels = new int[mAtlasWidth * mAtlasHeight];
+        mAtlasBitmap.getPixels(pixels, 0, mAtlasWidth, 0, 0, mAtlasWidth, mAtlasHeight);
+        int mism = 0, nonZero = 0, zeroMism = 0;
+        int firstMismX = -1, firstMismY = -1;
+        for (int y = 0; y < mAtlasHeight; y++) {
+            for (int x = 0; x < mAtlasWidth; x++) {
+                int tex = rb.get((y * mAtlasWidth + x) * 4) & 0xFF;
+                int bit = (pixels[y * mAtlasWidth + x] >> 24) & 0xFF;
+                if (tex > 0) nonZero++;
+                if (Math.abs(tex - bit) > 8) {
+                    mism++;
+                    if (firstMismX < 0) { firstMismX = x; firstMismY = y; }
+                    if (bit == 0) zeroMism++;
+                }
+            }
+        }
+        android.util.Log.i("SanixGpuDemo", "READBACK mismatch=" + mism + "/" + (mAtlasWidth * mAtlasHeight)
+            + " (zero-bit mism=" + zeroMism + ") nonZeroTex=" + nonZero + " first@(" + firstMismX + "," + firstMismY + ")");
+        android.util.Log.i("SanixGpuDemo", "READBACK tex(0,0)=" + (rb.get(0) & 0xFF) + " bit(0,0)=" + ((pixels[0] >> 24) & 0xFF)
+            + " tex(176,88)=" + (rb.get((88 * mAtlasWidth + 176) * 4) & 0xFF) + " bit(176,88)=" + ((pixels[88 * mAtlasWidth + 176] >> 24) & 0xFF)
+            + " tex(10,10)=" + (rb.get((10 * mAtlasWidth + 10) * 4) & 0xFF) + " bit(10,10)=" + ((pixels[10 * mAtlasWidth + 10] >> 24) & 0xFF));
+
+        GLES30.glViewport(0, 0, (int) mViewportWidth, (int) mViewportHeight);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    public byte[] dumpAtlasPng() {
+        if (mAtlasBitmap == null) return null;
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        mAtlasBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
     }
 
     private int createAtlasDumpProgram() {
@@ -370,7 +407,9 @@ public final class SanixGpuRenderer {
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
-        atlas.recycle();
+        mAtlasBitmap = atlas;
+        mAtlasWidth = atlasWidth;
+        mAtlasHeight = atlasHeight;
         return textures[0];
     }
 
