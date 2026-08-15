@@ -63,7 +63,7 @@ public final class SanixGpuDemoActivity extends Activity {
             PALETTE[TextStyle.COLOR_INDEX_CURSOR] = 0xFFFFFFFF;
         }
 
-        private final SanixGpuRenderer mRenderer = new SanixGpuRenderer(36, Typeface.DEFAULT_MONOSPACE);
+        private final SanixGpuRenderer mRenderer = new SanixGpuRenderer(36, Typeface.MONOSPACE);
         private final char[][] mText = new char[ROWS][];
         private final long[][] mStyles = new long[ROWS][];
         private int mFilledRows;
