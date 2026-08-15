@@ -2,13 +2,13 @@ package com.termux.sanix.renderer;
 
 import android.app.Activity;
 import android.graphics.Typeface;
-import android.opengl.EGLConfig;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 
 import com.termux.terminal.TextStyle;
 
+import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public final class SanixGpuDemoActivity extends Activity {
