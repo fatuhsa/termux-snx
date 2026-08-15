@@ -46,7 +46,7 @@ public final class SanixGpuRenderer {
     private float mViewportHeight;
 
     private FloatBuffer mInstanceData;
-    private final float[] mPalette = new float[TextStyle.COLOR_INDEX_CURSOR + 1];
+    private final float[] mPalette = new float[(TextStyle.COLOR_INDEX_CURSOR + 1) * 4];
 
     private static final String VERTEX_SHADER =
         "#version 300 es\n" +
