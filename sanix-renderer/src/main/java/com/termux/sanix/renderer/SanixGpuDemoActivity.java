@@ -30,7 +30,7 @@ public final class SanixGpuDemoActivity extends Activity {
         super.onCreate(savedInstanceState);
         mGlSurfaceView = new GLSurfaceView(this);
         mGlSurfaceView.setEGLContextClientVersion(3);
-        mGlSurfaceView.setRenderer(new DemoRenderer());
+        mGlSurfaceView.setRenderer(new DemoRenderer(getFilesDir().getAbsolutePath()));
         setContentView(mGlSurfaceView);
     }
 
@@ -47,6 +47,12 @@ public final class SanixGpuDemoActivity extends Activity {
     }
 
     private static final class DemoRenderer implements GLSurfaceView.Renderer {
+
+        private final String mFilesDir;
+
+        DemoRenderer(String filesDir) {
+            mFilesDir = filesDir;
+        }
 
         private static final int[] PALETTE = new int[TextStyle.NUM_INDEXED_COLORS];
 
@@ -163,7 +169,7 @@ public final class SanixGpuDemoActivity extends Activity {
             try {
                 byte[] png = mRenderer.dumpAtlasPng();
                 if (png != null) {
-                    java.io.File f = new java.io.File(getFilesDir(), "atlas_bitmap.png");
+                    java.io.File f = new java.io.File(mFilesDir, "atlas_bitmap.png");
                     java.io.FileOutputStream fos = new java.io.FileOutputStream(f);
                     fos.write(png);
                     fos.close();
