@@ -42,6 +42,11 @@ public final class SanixGpuRenderer {
     private int mUCellSize;
     private int mUAtlasCells;
     private int mUOffset;
+    private boolean mDebugAtlas;
+    private int mAtlasDumpProgram;
+    private Bitmap mAtlasBitmap;
+    private int mAtlasWidth;
+    private int mAtlasHeight;
     private float mViewportWidth;
     private float mViewportHeight;
 
@@ -137,6 +142,13 @@ public final class SanixGpuRenderer {
         mInstanceVbo = createInstanceBuffer();
 
         mAtlasTexture = createAtlas();
+        mAtlasDumpProgram = createAtlasDumpProgram();
+        android.util.Log.i("SanixGpuDemo", "init done, cellWpx=" + mCellWidthPx + " cellHpx=" + mCellHeightPx
+            + " atlas=" + (mCellWidthPx * ATLAS_COLS) + "x" + (mCellHeightPx * ATLAS_ROWS * ATLAS_PAGES));
+    }
+
+    public void setDebugAtlas(boolean enabled) {
+        mDebugAtlas = enabled;
     }
 
     public void resize(int cols, int rows) {
@@ -152,6 +164,11 @@ public final class SanixGpuRenderer {
     public void draw(char[][] text, long[][] styles, int cursorCol, int cursorRow, boolean cursorVisible, int[] palette) {
         GLES30.glClearColor(0.f, 0.f, 0.f, 1.f);
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
+
+        if (mDebugAtlas) {
+            drawAtlasDump();
+            return;
+        }
 
         if (mCols == 0 || mRows == 0) return;
 
@@ -200,6 +217,96 @@ public final class SanixGpuRenderer {
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mQuadEbo);
         GLES30.glDrawElementsInstanced(GLES30.GL_TRIANGLES, 6, GLES30.GL_UNSIGNED_SHORT, 0, cellCount);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    private void drawAtlasDump() {
+        GLES30.glUseProgram(mAtlasDumpProgram);
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mAtlasTexture);
+        GLES30.glUniform1i(GLES30.glGetUniformLocation(mAtlasDumpProgram, "uAtlas"), 0);
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, mQuadVbo);
+        GLES30.glVertexAttribPointer(0, 2, GLES30.GL_FLOAT, false, 0, 0);
+        GLES30.glEnableVertexAttribArray(0);
+        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mQuadEbo);
+        GLES30.glViewport(0, 0, mAtlasWidth, mAtlasHeight);
+        GLES30.glDrawElements(GLES30.GL_TRIANGLES, 6, GLES30.GL_UNSIGNED_SHORT, 0);
+
+        ByteBuffer rb = ByteBuffer.allocateDirect(mAtlasWidth * mAtlasHeight * 4);
+        GLES30.glReadPixels(0, 0, mAtlasWidth, mAtlasHeight, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, rb);
+        int[] pixels = new int[mAtlasWidth * mAtlasHeight];
+        mAtlasBitmap.getPixels(pixels, 0, mAtlasWidth, 0, 0, mAtlasWidth, mAtlasHeight);
+        int mism = 0, nonZero = 0, zeroMism = 0;
+        int firstMismX = -1, firstMismY = -1;
+        for (int y = 0; y < mAtlasHeight; y++) {
+            for (int x = 0; x < mAtlasWidth; x++) {
+                int tex = rb.get((y * mAtlasWidth + x) * 4) & 0xFF;
+                int bit = (pixels[y * mAtlasWidth + x] >> 24) & 0xFF;
+                if (tex > 0) nonZero++;
+                if (Math.abs(tex - bit) > 8) {
+                    mism++;
+                    if (firstMismX < 0) { firstMismX = x; firstMismY = y; }
+                    if (bit == 0) zeroMism++;
+                }
+            }
+        }
+        android.util.Log.i("SanixGpuDemo", "READBACK mismatch=" + mism + "/" + (mAtlasWidth * mAtlasHeight)
+            + " (zero-bit mism=" + zeroMism + ") nonZeroTex=" + nonZero + " first@(" + firstMismX + "," + firstMismY + ")");
+        android.util.Log.i("SanixGpuDemo", "READBACK tex(0,0)=" + (rb.get(0) & 0xFF) + " bit(0,0)=" + ((pixels[0] >> 24) & 0xFF)
+            + " tex(176,88)=" + (rb.get((88 * mAtlasWidth + 176) * 4) & 0xFF) + " bit(176,88)=" + ((pixels[88 * mAtlasWidth + 176] >> 24) & 0xFF)
+            + " tex(10,10)=" + (rb.get((10 * mAtlasWidth + 10) * 4) & 0xFF) + " bit(10,10)=" + ((pixels[10 * mAtlasWidth + 10] >> 24) & 0xFF));
+
+        GLES30.glViewport(0, 0, (int) mViewportWidth, (int) mViewportHeight);
+        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    public byte[] dumpAtlasPng() {
+        if (mAtlasBitmap == null) return null;
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        mAtlasBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
+    }
+
+    private int createAtlasDumpProgram() {
+        String vertex =
+            "#version 300 es\n" +
+            "precision highp float;\n" +
+            "layout(location=0) in vec2 aPos;\n" +
+            "out vec2 vUv;\n" +
+            "void main() {\n" +
+            "    vUv = aPos;\n" +
+            "    gl_Position = vec4(aPos * 2.0 - 1.0, 0.0, 1.0);\n" +
+            "}\n";
+        String fragment =
+            "#version 300 es\n" +
+            "precision highp float;\n" +
+            "in vec2 vUv;\n" +
+            "uniform sampler2D uAtlas;\n" +
+            "out vec4 fragColor;\n" +
+            "void main() {\n" +
+            "    float a = texture(uAtlas, vUv).a;\n" +
+            "    fragColor = vec4(vec3(a), 1.0);\n" +
+            "}\n";
+        int program = createProgramFromSources(vertex, fragment);
+        android.util.Log.i("SanixGpuDemo", "atlas dump program created");
+        return program;
+    }
+
+    private int createProgramFromSources(String vertexSource, String fragmentSource) {
+        int vertex = compileShader(GLES30.GL_VERTEX_SHADER, vertexSource);
+        int fragment = compileShader(GLES30.GL_FRAGMENT_SHADER, fragmentSource);
+        int program = GLES30.glCreateProgram();
+        GLES30.glAttachShader(program, vertex);
+        GLES30.glAttachShader(program, fragment);
+        GLES30.glBindAttribLocation(program, 0, "aPos");
+        GLES30.glLinkProgram(program);
+        int[] linked = new int[1];
+        GLES30.glGetProgramiv(program, GLES30.GL_LINK_STATUS, linked, 0);
+        if (linked[0] == 0) {
+            throw new IllegalStateException(GLES30.glGetProgramInfoLog(program));
+        }
+        GLES30.glDeleteShader(vertex);
+        GLES30.glDeleteShader(fragment);
+        return program;
     }
 
     private void fillCell(FloatBuffer data, char[] line, long[] rowStyles, int col, int row, boolean cursorHere) {
@@ -293,12 +400,16 @@ public final class SanixGpuRenderer {
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textures[0]);
         GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_ALPHA, atlasWidth, atlasHeight, 0,
             GLES30.GL_ALPHA, GLES30.GL_UNSIGNED_BYTE, alpha);
+        android.util.Log.i("SanixGpuDemo", "glTexImage2D err=" + GLES30.glGetError()
+            + " tex=" + textures[0] + " size=" + atlasWidth + "x" + atlasHeight);
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR);
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR);
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
-        atlas.recycle();
+        mAtlasBitmap = atlas;
+        mAtlasWidth = atlasWidth;
+        mAtlasHeight = atlasHeight;
         return textures[0];
     }
 
@@ -349,21 +460,7 @@ public final class SanixGpuRenderer {
     }
 
     private int createProgram() {
-        int vertex = compileShader(GLES30.GL_VERTEX_SHADER, VERTEX_SHADER);
-        int fragment = compileShader(GLES30.GL_FRAGMENT_SHADER, FRAGMENT_SHADER);
-        int program = GLES30.glCreateProgram();
-        GLES30.glAttachShader(program, vertex);
-        GLES30.glAttachShader(program, fragment);
-        GLES30.glBindAttribLocation(program, 0, "aPos");
-        GLES30.glLinkProgram(program);
-        int[] linked = new int[1];
-        GLES30.glGetProgramiv(program, GLES30.GL_LINK_STATUS, linked, 0);
-        if (linked[0] == 0) {
-            throw new IllegalStateException(GLES30.glGetProgramInfoLog(program));
-        }
-        GLES30.glDeleteShader(vertex);
-        GLES30.glDeleteShader(fragment);
-        return program;
+        return createProgramFromSources(VERTEX_SHADER, FRAGMENT_SHADER);
     }
 
     private int compileShader(int type, String source) {
