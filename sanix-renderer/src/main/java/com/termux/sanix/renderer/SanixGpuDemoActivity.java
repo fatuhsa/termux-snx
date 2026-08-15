@@ -152,7 +152,7 @@ public final class SanixGpuDemoActivity extends Activity {
         }
 
         private static long encode(int fg, int bg, int effect) {
-            return effect | ((long) fg << 32) | ((long) bg << 16);
+            return effect | ((long) fg << 40) | ((long) bg << 16);
         }
 
         @Override

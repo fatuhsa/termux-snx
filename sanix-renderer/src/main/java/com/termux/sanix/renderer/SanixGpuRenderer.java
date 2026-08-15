@@ -40,7 +40,7 @@ public final class SanixGpuRenderer {
     private int mInstanceVbo;
     private int mUViewport;
     private int mUCellSize;
-    private int mUAtlasSize;
+    private int mUAtlasCells;
     private int mUOffset;
     private float mViewportWidth;
     private float mViewportHeight;
@@ -57,7 +57,7 @@ public final class SanixGpuRenderer {
         "layout(location=4) in float aFlags;\n" +
         "uniform vec2 uViewport;\n" +
         "uniform vec2 uCellSize;\n" +
-        "uniform vec2 uAtlasSize;\n" +
+        "uniform vec2 uAtlasCells;\n" +
         "uniform vec2 uOffset;\n" +
         "out vec2 vUv;\n" +
         "out vec4 vFg;\n" +
@@ -69,8 +69,7 @@ public final class SanixGpuRenderer {
         "    ndc.x = (cellOrigin.x + aPos.x * uCellSize.x) / uViewport.x * 2.0 - 1.0;\n" +
         "    ndc.y = 1.0 - (cellOrigin.y + aPos.y * uCellSize.y) / uViewport.y * 2.0;\n" +
         "    gl_Position = vec4(ndc, 0.0, 1.0);\n" +
-        "    vec2 cellUvSize = uCellSize / uAtlasSize;\n" +
-        "    vUv = (aCell.zw + aPos) * cellUvSize;\n" +
+        "    vUv = (aCell.zw + aPos) / uAtlasCells;\n" +
         "    vFg = aFg;\n" +
         "    vBg = aBg;\n" +
         "    vFlags = aFlags;\n" +
@@ -84,11 +83,12 @@ public final class SanixGpuRenderer {
         "in vec4 vBg;\n" +
         "in float vFlags;\n" +
         "uniform sampler2D uAtlas;\n" +
+        "uniform vec2 uAtlasCells;\n" +
         "out vec4 fragColor;\n" +
         "void main() {\n" +
         "    float alpha = texture(uAtlas, vUv).a;\n" +
         "    vec4 color = mix(vBg, vFg, alpha);\n" +
-        "    if (vFlags > 0.5 && vUv.y < 0.125) color = vFg;\n" +
+        "    if (vFlags > 0.5 && fract(vUv.y * uAtlasCells.y) < 0.125) color = vFg;\n" +
         "    fragColor = color;\n" +
         "}\n";
 
@@ -128,7 +128,7 @@ public final class SanixGpuRenderer {
         mProgram = createProgram();
         mUViewport = GLES30.glGetUniformLocation(mProgram, "uViewport");
         mUCellSize = GLES30.glGetUniformLocation(mProgram, "uCellSize");
-        mUAtlasSize = GLES30.glGetUniformLocation(mProgram, "uAtlasSize");
+        mUAtlasCells = GLES30.glGetUniformLocation(mProgram, "uAtlasCells");
         mUOffset = GLES30.glGetUniformLocation(mProgram, "uOffset");
 
         mQuadVbo = createQuad();
@@ -187,7 +187,7 @@ public final class SanixGpuRenderer {
         GLES30.glUniform1i(GLES30.glGetUniformLocation(mProgram, "uAtlas"), 0);
         GLES30.glUniform2f(mUViewport, mViewportWidth, mViewportHeight);
         GLES30.glUniform2f(mUCellSize, cellW, cellH);
-        GLES30.glUniform2f(mUAtlasSize, mCellWidthPx * ATLAS_COLS, mCellHeightPx * ATLAS_ROWS * ATLAS_PAGES);
+        GLES30.glUniform2f(mUAtlasCells, ATLAS_COLS, ATLAS_ROWS * ATLAS_PAGES);
         GLES30.glUniform2f(mUOffset, offsetX, offsetY);
 
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, mQuadVbo);
