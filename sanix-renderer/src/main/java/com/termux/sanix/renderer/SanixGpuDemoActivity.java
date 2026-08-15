@@ -71,10 +71,20 @@ public final class SanixGpuDemoActivity extends Activity {
         private int mCursorRow = -1;
 
         DemoRenderer() {
-            int[] colors = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-            for (int r = 0; r < ROWS; r++) {
-                addRow("", style(colors[r], colors[r], 0));
-            }
+            addRow("Sanix GPU Renderer v0.1", plain());
+            addRow("", plain());
+            addRow("Hello Sanix!", plain());
+            addRow("$ git status", plain());
+            addRow("On branch master", plain());
+            addRow("nothing to commit, working tree clean", plain());
+            addRow("", plain());
+            addRow("ANSI 16 colors:", plain());
+            addColorRow();
+            addRow("", plain());
+            addEffectRow();
+            addRow("", plain());
+            addRow("next: wire to TerminalBuffer -> instanced draw", style(2, BG, 0));
+            addRow("", plain());
             mCursorCol = 12;
             mCursorRow = 3;
         }

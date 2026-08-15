@@ -65,7 +65,9 @@ public final class SanixGpuRenderer {
         "out float vFlags;\n" +
         "void main() {\n" +
         "    vec2 cellOrigin = uOffset + aCell.xy * uCellSize;\n" +
-        "    vec2 ndc = (cellOrigin + aPos * uCellSize) / uViewport * 2.0 - 1.0;\n" +
+        "    vec2 ndc;\n" +
+        "    ndc.x = (cellOrigin.x + aPos.x * uCellSize.x) / uViewport.x * 2.0 - 1.0;\n" +
+        "    ndc.y = 1.0 - (cellOrigin.y + aPos.y * uCellSize.y) / uViewport.y * 2.0;\n" +
         "    gl_Position = vec4(ndc, 0.0, 1.0);\n" +
         "    vec2 cellUvSize = uCellSize / uAtlasSize;\n" +
         "    vUv = (aCell.zw + aPos) * cellUvSize;\n" +
