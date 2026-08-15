@@ -50,6 +50,7 @@ public final class SanixGpuRenderer {
 
     private static final String VERTEX_SHADER =
         "#version 300 es\n" +
+        "precision highp float;\n" +
         "layout(location=0) in vec2 aPos;\n" +
         "layout(location=1) in vec4 aCell;\n" +
         "layout(location=2) in vec4 aFg;\n" +
