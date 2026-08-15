@@ -78,7 +78,7 @@ public final class SanixGpuRenderer {
 
     private static final String FRAGMENT_SHADER =
         "#version 300 es\n" +
-        "precision mediump float;\n" +
+        "precision highp float;\n" +
         "in vec2 vUv;\n" +
         "in vec4 vFg;\n" +
         "in vec4 vBg;\n" +
