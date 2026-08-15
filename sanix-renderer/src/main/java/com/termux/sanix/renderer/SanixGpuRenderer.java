@@ -89,7 +89,7 @@ public final class SanixGpuRenderer {
         "void main() {\n" +
         "    float alpha = texture(uAtlas, vUv).a;\n" +
         "    vec4 color = mix(vBg, vFg, alpha);\n" +
-        "    if (vFlags > 0.5 && fract(vUv.y * uAtlasCells.y) < 0.125) color = vFg;\n" +
+        "    if (vFlags > 0.5 && fract(vUv.y * uAtlasCells.y) > 0.875) color = vFg;\n" +
         "    fragColor = color;\n" +
         "}\n";
 
