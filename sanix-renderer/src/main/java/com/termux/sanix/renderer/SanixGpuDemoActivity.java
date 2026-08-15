@@ -159,6 +159,7 @@ public final class SanixGpuDemoActivity extends Activity {
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
             android.util.Log.i("SanixGpuDemo", "onSurfaceCreated");
             mRenderer.init();
+            mRenderer.setDebugAtlas(true);
         }
 
         @Override
